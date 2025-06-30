@@ -1,7 +1,6 @@
 package models
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/sarthak-gc/file_sharing_service/pkg/config"
@@ -12,22 +11,24 @@ var db *gorm.DB
 
 type FileDetails struct {
 	gorm.Model
-	Id          string    `json:"id"`
-	FileName    string    `json:"fileName"`
+	FileName    string    `gorm:"column:fileName" json:"fileName"` // by default the PascalCase will be converted to snake_case
 	StoragePath string    `json:"storagePath"`
 	UploadTime  time.Time `json:"uploadTime"`
 	ExpireAt    time.Time `json:"expireAt"`
-	ShareToken  string    `json:"shareToken"`
+	ShareToken  string    `gorm:"uniqueIndex" json:"shareToken"`
 }
 
 func init() {
+	config.ConnectDB()
 	db = config.GetDB()
 	db.AutoMigrate(&FileDetails{})
 }
 
-func UploadFile() {
-	fmt.Println("File uploaded")
+func UploadFile(file FileDetails) {
+	db.Save(&file)
 }
-func DownloadFile(token string) {
-	fmt.Println("File downloaded")
+func DownloadFile(token string) FileDetails {
+	var file FileDetails
+	db.Where("share_token=?", token).First(&file)
+	return file
 }

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>File Sharing Service</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="./styles.css" rel="stylesheet" />
+    <link
+      rel="icon"
+      href="https://cdn.jsdelivr.net/gh/feathericons/feather/icons/share.svg"
+    />
+  </head>
+  <body
+    class="bg-zinc-950 min-h-screen flex items-center justify-center text-zinc-200"
+  >
+    <div
+      class="w-full max-w-md p-6 sm:p-8 bg-zinc-900 rounded-xl border border-zinc-800 space-y-6"
+    >
+      <header class="text-center space-y-1">
+        <h1 class="text-2xl font-semibold">File Sharing</h1>
+        <p class="text-sm text-zinc-400">Upload and share files securely.</p>
+      </header>
+
+      <div class="flex gap-2">
+        <button
+          type="button"
+          onclick="switchTab('upload')"
+          id="tab-upload"
+          class="flex-1 py-2 rounded-md text-sm font-medium bg-zinc-800 hover:bg-zinc-700 transition"
+        >
+          Upload
+        </button>
+        <button
+          type="button"
+          onclick="switchTab('download')"
+          id="tab-download"
+          class="flex-1 py-2 rounded-md text-sm font-medium bg-zinc-800 hover:bg-zinc-700 transition"
+        >
+          Download
+        </button>
+      </div>
+
+      <div id="upload-section" class="space-y-5">
+        <form id="uploadForm" class="space-y-4" autocomplete="off">
+          <div>
+            <label for="fileInput" class="block text-sm mb-1">File</label>
+            <input
+              type="file"
+              id="fileInput"
+              name="file"
+              required
+              class="w-full text-sm text-zinc-100 file:bg-zinc-800 file:border-0 file:px-4 file:py-2 file:rounded-md file:text-sm file:text-zinc-300 hover:file:bg-zinc-700"
+            />
+          </div>
+          <div>
+            <label for="fileName" class="block text-sm mb-1">File name</label>
+            <input
+              type="text"
+              id="fileName"
+              name="name"
+              placeholder="Enter name"
+              required
+              class="w-full px-3 py-2 text-sm bg-zinc-800 border border-zinc-700 rounded-md focus:outline-none focus:ring focus:ring-zinc-600"
+            />
+          </div>
+          <button
+            type="submit"
+            id="uploadBtn"
+            class="w-full py-2 text-sm font-medium bg-zinc-700 hover:bg-zinc-600 rounded-md flex items-center justify-center gap-2"
+          >
+            <span id="uploadBtnText">Upload</span>
+            <svg
+              id="uploadSpinner"
+              class="hidden animate-spin h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              />
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v8z"
+              />
+            </svg>
+          </button>
+        </form>
+        <div id="uploadResult" class="text-center text-sm"></div>
+
+        <div id="uploadTokenContainer" class="hidden text-center space-y-2">
+          <p class="text-sm font-medium">Share Token:</p>
+          <div class="inline-flex items-center gap-2">
+            <span
+              id="uploadToken"
+              class="font-mono px-3 py-1 text-sm bg-zinc-800 rounded-md border border-zinc-700 cursor-pointer select-all"
+              onclick="copyTokenToClipboard()"
+              title="Click to copy"
+            ></span>
+            <button
+              id="copyTokenBtn"
+              class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 rounded-md"
+              type="button"
+            >
+              Copy
+            </button>
+          </div>
+          <span id="copyTokenMsg" class="text-xs text-green-400 hidden"
+            >Copied!</span
+          >
+        </div>
+      </div>
+
+      <div id="download-section" class="hidden space-y-4">
+        <form id="downloadForm" class="space-y-4" autocomplete="off">
+          <div>
+            <label for="tokenInput" class="block text-sm mb-1">Token</label>
+            <input
+              type="text"
+              id="tokenInput"
+              name="token"
+              placeholder="Enter token"
+              required
+              class="w-full px-3 py-2 text-sm bg-zinc-800 border border-zinc-700 rounded-md focus:outline-none focus:ring focus:ring-zinc-600"
+            />
+          </div>
+          <button
+            type="submit"
+            id="downloadBtn"
+            class="w-full py-2 text-sm font-medium bg-zinc-700 hover:bg-zinc-600 rounded-md flex items-center justify-center gap-2"
+          >
+            <span id="downloadBtnText">Download</span>
+            <svg
+              id="downloadSpinner"
+              class="hidden animate-spin h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              />
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v8z"
+              />
+            </svg>
+          </button>
+        </form>
+        <div id="downloadResult" class="text-center text-sm"></div>
+      </div>
+
+      <footer
+        class="text-center text-xs text-zinc-500 pt-4 border-t border-zinc-800"
+      >
+        &copy; <span id="year"></span> File Sharing Service. Made with
+        <span class="text-pink-400">&hearts;</span>
+      </footer>
+    </div>
+    <script>
+      function switchTab(tab) {
+        const isUpload = tab === "upload";
+        const isDownload = tab === "download";
+
+        document
+          .getElementById("upload-section")
+          .classList.toggle("hidden", !isUpload);
+        document
+          .getElementById("download-section")
+          .classList.toggle("hidden", !isDownload);
+
+        const uploadTab = document.getElementById("tab-upload");
+        uploadTab.classList.toggle("bg-zinc-800", isUpload);
+        uploadTab.classList.toggle("text-white", isUpload);
+        uploadTab.classList.toggle("bg-zinc-700", !isUpload);
+        uploadTab.classList.toggle("text-zinc-200", !isUpload);
+
+        const downloadTab = document.getElementById("tab-download");
+        downloadTab.classList.toggle("bg-zinc-800", isDownload);
+        downloadTab.classList.toggle("text-white", isDownload);
+        downloadTab.classList.toggle("bg-zinc-700", !isDownload);
+        downloadTab.classList.toggle("text-zinc-200", !isDownload);
+      }
+      document.getElementById("year").textContent = new Date().getFullYear();
+
+      function setLoading(btnId, spinnerId, textId, loading) {
+        document.getElementById(btnId).disabled = loading;
+        document.getElementById(spinnerId).classList.toggle("hidden", !loading);
+        document.getElementById(textId).classList.toggle("opacity-50", loading);
+      }
+
+      function showMessage(id, msg, type = "info") {
+        const el = document.getElementById(id);
+        let icon = "";
+        if (type === "success") {
+          icon =
+            '<svg class="inline h-5 w-5 text-green-400 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>';
+          el.className = "mt-4 text-center text-base text-green-400";
+        } else if (type === "error") {
+          icon =
+            '<svg class="inline h-5 w-5 text-red-400 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>';
+          el.className = "mt-4 text-center text-base text-red-400";
+        } else {
+          icon =
+            '<svg class="inline h-5 w-5 text-zinc-400 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3"/></svg>';
+          el.className = "mt-4 text-center text-base text-zinc-400";
+        }
+        el.innerHTML = icon + msg;
+      }
+
+      document
+        .getElementById("uploadForm")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+          const fileInput = document.getElementById("fileInput");
+          const fileName = document.getElementById("fileName").value.trim();
+          if (!fileInput.files.length) {
+            showMessage("uploadResult", "Please select a file.", "error");
+            return false;
+          }
+          if (!fileName) {
+            showMessage("uploadResult", "Please enter a file name.", "error");
+            return false;
+          }
+          const formData = new FormData();
+          formData.append("file", fileInput.files[0]);
+          formData.append("name", fileName);
+          setLoading("uploadBtn", "uploadSpinner", "uploadBtnText", true);
+          showMessage("uploadResult", "Uploading...", "info");
+          document
+            .getElementById("uploadTokenContainer")
+            .classList.add("hidden");
+          document.getElementById("copyTokenMsg").classList.add("hidden");
+          try {
+            const res = await fetch("http://192.168.254.2:9090/upload", {
+              method: "POST",
+              body: formData,
+            });
+            const data = await res.json();
+            if (res.ok) {
+              showMessage(
+                "uploadResult",
+                "File uploaded successfully!",
+                "success"
+              );
+              let token = null;
+              if (typeof data === "object" && data.ShareToken) {
+                token = data.ShareToken;
+              }
+              if (token) {
+                document.getElementById("uploadToken").textContent = token;
+                document
+                  .getElementById("uploadTokenContainer")
+                  .classList.remove("hidden");
+                document
+                  .getElementById("uploadToken")
+                  .setAttribute("title", "Click to copy");
+              }
+              fileInput.value = "";
+              document.getElementById("fileName").value = "";
+            } else {
+              showMessage(
+                "uploadResult",
+                typeof data === "string" ? data : "Upload failed",
+                "error"
+              );
+            }
+          } catch (err) {
+            showMessage("uploadResult", "Error uploading file", "error");
+          }
+          setLoading("uploadBtn", "uploadSpinner", "uploadBtnText", false);
+          console.log("Uploaded2");
+          return false;
+        });
+
+      function copyTokenToClipboard() {
+        const token = document.getElementById("uploadToken").textContent;
+        if (!token) return;
+        navigator.clipboard.writeText(token).then(() => {
+          document.getElementById("copyTokenMsg").classList.remove("hidden");
+          setTimeout(() => {
+            document.getElementById("copyTokenMsg").classList.add("hidden");
+          }, 1200);
+        });
+      }
+      document
+        .getElementById("copyTokenBtn")
+        .addEventListener("click", function (e) {
+          e.preventDefault();
+          copyTokenToClipboard();
+        });
+
+      document
+        .getElementById("downloadForm")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+          const token = document.getElementById("tokenInput").value.trim();
+          if (!token) {
+            showMessage(
+              "downloadResult",
+              "Please enter a file token.",
+              "error"
+            );
+            return false;
+          }
+          const url = `http://192.168.254.2:9090/download/${encodeURIComponent(
+            token
+          )}`;
+
+          setLoading("downloadBtn", "downloadSpinner", "downloadBtnText", true);
+          showMessage("downloadResult", "Downloading...", "info");
+
+          try {
+            const res = await fetch(url);
+            if (!res.ok) {
+              showMessage("downloadResult", "Error downloading file", "error");
+              setLoading(
+                "downloadBtn",
+                "downloadSpinner",
+                "downloadBtnText",
+                false
+              );
+              return false;
+            }
+            const disposition = res.headers.get("Content-Disposition");
+            let filename = "downloaded_file";
+            if (disposition && disposition.indexOf("filename=") !== -1) {
+              filename = disposition.split("filename=")[1].replace(/"/g, "");
+            }
+            const blob = await res.blob();
+            const link = document.createElement("a");
+            link.href = window.URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showMessage("downloadResult", "Download started!", "success");
+            document.getElementById("tokenInput").value = "";
+          } catch (err) {
+            showMessage("downloadResult", "Error downloading file", "error");
+          }
+          setLoading(
+            "downloadBtn",
+            "downloadSpinner",
+            "downloadBtnText",
+            false
+          );
+          return false;
+        });
+
+      switchTab("upload");
+    </script>
+  </body>
+</html>

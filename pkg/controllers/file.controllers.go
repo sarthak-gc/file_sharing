@@ -1,20 +1,62 @@
 package controllers
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/sarthak-gc/file_sharing_service/pkg/models"
+	"github.com/sarthak-gc/file_sharing_service/pkg/utils"
 )
 
 func UploadFile(w http.ResponseWriter, r *http.Request) {
-	models.UploadFile()
-	fmt.Fprint(w, "File downloaded")
+	w.Header().Set("Content-Type", "application/json")
+
+	fullPath, err := utils.UploadFile(r)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+	uploadedFile := &models.FileDetails{}
+	token, err := utils.GenerateToken(16)
+	if err != nil {
+		panic("error while generating token, try again")
+	}
+	utils.ParseBody(r, uploadedFile)
+	uploadedFile.ShareToken = token
+	uploadedFile.StoragePath = fullPath
+	models.UploadFile(*uploadedFile)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message":    "File uploaded successfully",
+		"ShareToken": token,
+	})
 }
+
 func DownloadFile(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	vars := mux.Vars(r)
 	token := vars["token"]
-	models.DownloadFile(token)
-	fmt.Fprint(w, "File downloaded")
+
+	if token == "" {
+		http.Error(w, `{"error": "Missing token"}`, http.StatusBadRequest)
+		return
+	}
+
+	file := models.DownloadFile(token)
+	filePath := file.StoragePath
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		http.Error(w, `{"error": "File does not exist"}`, http.StatusNotFound)
+		return
+	}
+
+	fileName := strings.Split(filePath, "/")[1]
+
+	w.Header().Set("Content-Disposition", "attachment; filename="+fileName)
+	w.Header().Set("Content-Type", "application/octet-stream")
+
+	http.ServeFile(w, r, filePath)
 }

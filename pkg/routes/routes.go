@@ -6,6 +6,6 @@ import (
 )
 
 func Routes(router *mux.Router) {
-	router.HandleFunc("/upload", controllers.UploadFile)
-	router.HandleFunc("/download/{token}", controllers.DownloadFile)
+	router.HandleFunc("/upload", controllers.UploadFile).Methods("POST")
+	router.HandleFunc("/download/{token}", controllers.DownloadFile).Methods("GET")
 }
