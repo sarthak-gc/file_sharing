@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -53,7 +54,14 @@ func DownloadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fileName := strings.Split(filePath, "/")[1]
+	base := filepath.Base(filePath)
+	underscoreIdx := strings.LastIndex(base, "_")
+	dotIdx := strings.LastIndex(base, ".")
+	originalName := base
+	if underscoreIdx != -1 && dotIdx != -1 && underscoreIdx < dotIdx {
+		originalName = base[:underscoreIdx] + base[dotIdx:]
+	}
+	fileName := originalName
 
 	w.Header().Set("Content-Disposition", "attachment; filename="+fileName)
 	w.Header().Set("Content-Type", "application/octet-stream")

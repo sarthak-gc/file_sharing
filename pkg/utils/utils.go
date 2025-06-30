@@ -53,7 +53,13 @@ func UploadFile(r *http.Request) (string, error) {
 
 	path := filepath.Join(".", "files")
 	_ = os.MkdirAll(path, os.ModePerm)
-	fullPath := path + "/" + name + fileExtension
+
+	uniqueSuffix, err := GenerateToken(8)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate unique file name")
+	}
+
+	fullPath := filepath.Join(path, fmt.Sprintf("%s_%s%s", name, uniqueSuffix, fileExtension))
 
 	file, err := os.OpenFile(fullPath, os.O_WRONLY|os.O_CREATE, os.ModePerm)
 	if err != nil {

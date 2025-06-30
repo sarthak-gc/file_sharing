@@ -99,7 +99,6 @@
             <span
               id="uploadToken"
               class="font-mono px-3 py-1 text-sm bg-zinc-800 rounded-md border border-zinc-700 cursor-pointer select-all"
-              onclick="copyTokenToClipboard()"
               title="Click to copy"
             ></span>
             <button
@@ -283,16 +282,64 @@
           return false;
         });
 
+      // Make both the span and the button copy the token
       function copyTokenToClipboard() {
         const token = document.getElementById("uploadToken").textContent;
         if (!token) return;
-        navigator.clipboard.writeText(token).then(() => {
-          document.getElementById("copyTokenMsg").classList.remove("hidden");
-          setTimeout(() => {
-            document.getElementById("copyTokenMsg").classList.add("hidden");
-          }, 1200);
-        });
+        // Fallback for older browsers
+        if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard
+            .writeText(token)
+            .then(() => {
+              document
+                .getElementById("copyTokenMsg")
+                .classList.remove("hidden");
+              setTimeout(() => {
+                document.getElementById("copyTokenMsg").classList.add("hidden");
+              }, 1200);
+            })
+            .catch(() => {
+              // fallback
+              const textarea = document.createElement("textarea");
+              textarea.value = token;
+              document.body.appendChild(textarea);
+              textarea.select();
+              try {
+                document.execCommand("copy");
+                document
+                  .getElementById("copyTokenMsg")
+                  .classList.remove("hidden");
+                setTimeout(() => {
+                  document
+                    .getElementById("copyTokenMsg")
+                    .classList.add("hidden");
+                }, 1200);
+              } catch (err) {}
+              document.body.removeChild(textarea);
+            });
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = token;
+          document.body.appendChild(textarea);
+          textarea.select();
+          try {
+            document.execCommand("copy");
+            document.getElementById("copyTokenMsg").classList.remove("hidden");
+            setTimeout(() => {
+              document.getElementById("copyTokenMsg").classList.add("hidden");
+            }, 1200);
+          } catch (err) {}
+          document.body.removeChild(textarea);
+        }
       }
+
+      document
+        .getElementById("uploadToken")
+        .addEventListener("click", function (e) {
+          e.preventDefault();
+          copyTokenToClipboard();
+        });
+
       document
         .getElementById("copyTokenBtn")
         .addEventListener("click", function (e) {
